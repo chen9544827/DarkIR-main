@@ -65,16 +65,20 @@ def pad_tensor(tensor, multiple = 8):
     return tensor
 
 def load_model(model, path_weights):
-    map_location = device # 直接載入到 GPU
+    map_location = device 
+    print(f"Loading weights from: {path_weights}")
     checkpoints = torch.load(path_weights, map_location=map_location, weights_only=False)
     
-    weights = checkpoints['params']
-    
-    # --- 關鍵修改：權重名稱處理 ---
-    # 原本的代碼強制加了 'module.'，現在我們要反過來：
-    # 1. 如果權重本身沒有 'module.' (單卡訓練的)，直接用。
-    # 2. 如果權重有 'module.' (DDP訓練的)，要把它去掉。
-    
+    # --- 修改重點：自動偵測權重 Key ---
+    if 'params' in checkpoints:
+        weights = checkpoints['params']
+    elif 'model_state_dict' in checkpoints:
+        weights = checkpoints['model_state_dict']
+    else:
+        weights = checkpoints # 假設整個檔案就是權重 (少見但有可能)
+    # --------------------------------
+
+    # 處理 module. 前綴 (DDP 殘留)
     new_weights = {}
     for key, value in weights.items():
         if key.startswith('module.'):
@@ -82,17 +86,15 @@ def load_model(model, path_weights):
         else:
             new_weights[key] = value
             
-    # 移除原本強制添加 module. 的那一行
-    # weights = {'module.' + key: value for key, value in weights.items()} 
-
-    # 計算 FLOPs (可選，若報錯可註解掉)
+    # 計算 FLOPs (可選)
     try:
         macs, params = get_model_complexity_info(model, (3, 256, 256), print_per_layer_stat=False, verbose=False)
         print(f"MACs: {macs}, Params: {params}")
     except:
         pass
 
-    model.load_state_dict(new_weights, strict=True)
+    # 載入權重
+    model.load_state_dict(new_weights, strict=True) # strict=True 確保完全對應
     print('Loaded weights correctly')
     
     return model
@@ -197,7 +199,7 @@ def predict_folder():
 
 def main():
     # 移除 mp.spawn
-    predict_folder()
+    predict_folder()# 單進程執行
 
 if __name__ == '__main__':
     main()

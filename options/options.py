@@ -29,7 +29,7 @@ def parse(opt_path):
     Creates a dictionary from the config yaml file.
     '''
     if not os.path.isfile(opt_path): raise ValueError('The config file does not exist!')
-    with open(opt_path, mode='r') as f:
+    with open(opt_path, mode='r', encoding='utf-8') as f:
         opt = yaml.load(f, Loader=Loader)
     return opt
 

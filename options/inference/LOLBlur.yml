@@ -2,7 +2,7 @@
 network:
   name: DarkIR
   img_channels: 3
-  width: 64
+  width: 32
   middle_blk_num_enc: 2
   middle_blk_num_dec: 2
   enc_blk_nums: [1, 2, 3]
@@ -12,6 +12,6 @@ network:
 
 #### save model
 save:
-  path: ./models/DarkIR_64width.pt
+  path: ./models/DarkIR_LOLv2/checkpoint_epoch_100.pth
 
 Resize: False
