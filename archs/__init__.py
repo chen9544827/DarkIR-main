@@ -41,26 +41,32 @@ def create_model(opt, rank, adapter = False):
                         extra_depth_wise=opt['extra_depth_wise'])
     # -----------------------------------
 
-    if rank == 0:
-        print(f'Using {name} network')
-        try:
-            # 嘗試計算複雜度
-            input_size = (3, 256, 256)
-            macs, params = get_model_complexity_info(model, input_size, print_per_layer_stat = False)
-            print(f'Computational complexity: {macs}, Params: {params}')    
-        except Exception:
-            print("Complexity info skipped (Normal for Mamba structure)")
-            macs, params = "Unknown", "Unknown"
-    else:
-        macs, params = None, None
-
+    # --- [關鍵修改] 先設定 Device 並把模型搬過去 ---
+    # 這是為了解決 Mamba 組件 (causal_conv1d) 必須在 CUDA 上才能運算的問題
     if torch.cuda.is_available():
         device = torch.device(f'cuda:{rank}')
     else:
         device = torch.device('cpu')
     
     model = model.to(device)
-    
+    # -------------------------------------------
+
+    # --- 再計算 FLOPs (這時候模型已經在 GPU 了) ---
+    if rank == 0:
+        print(f'Using {name} network')
+        try:
+            # 嘗試計算複雜度
+            # ptflops 會自動偵測模型所在的 device，所以現在傳入 GPU model 是安全的
+            input_size = (3, 256, 256)
+            macs, params = get_model_complexity_info(model, input_size, print_per_layer_stat = False)
+            print(f'Computational complexity: {macs}, Params: {params}')    
+        except Exception as e:
+            print(f"Complexity info skipped (Normal for Mamba structure if input type mismatch): {e}")
+            macs, params = "Unknown", "Unknown"
+    else:
+        macs, params = None, None
+
+    # --- DDP 設定 ---
     if dist.is_initialized():
         model = DDP(model, device_ids=[rank], find_unused_parameters=adapter)
     else:

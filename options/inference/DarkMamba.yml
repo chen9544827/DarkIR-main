@@ -1,0 +1,22 @@
+# options/inference/DarkMamba.yml
+
+#### 網路結構 (必須改成 DarkMamba)
+network:
+  name: DarkMamba
+  img_channels: 3
+  width: 32
+  middle_blk_num_enc: 2
+  middle_blk_num_dec: 2
+  enc_blk_nums: [1, 2, 3]
+  dec_blk_nums: [3, 1, 1]
+  dilations: [1, 4, 9]
+  extra_depth_wise: True
+
+#### 權重路徑 (這是最重要的地方！)
+save:
+  # 請確認這裡指向你訓練出來的那個最好的 .pth 檔案
+  # 例如： ./experiments/DarkMamba_LOLv2_Real/models/epoch_170.pth
+  # 或 ./models/DarkMamba_LOLv2_best.pt (看你訓練時設定存在哪)
+  path: ./models/models/epoch_170.pth
+
+Resize: False
