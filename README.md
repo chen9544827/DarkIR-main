@@ -41,10 +41,31 @@
 
 ## 🛠️ 核心架構 (Methodology)
 
-我們基於 U-Net 架構進行改良:
+我們基於 U-Net 架構進行改良，提出了 **DarkMamba**。
 
-1. **Baseline (DarkIR):** 使用基於 CNN 的 EBlock 與 DBlock。
-2. **Ours (DarkMamba):** 將 Encoder 與 Decoder 的核心特徵提取層替換為 **Vision Mamba Block (Vim)**,引入全域掃描機制。
+### 1. 架構差異
+* **Baseline (DarkIR):** 使用基於 CNN 的 EBlock 與 DBlock，依賴卷積層提取特徵。
+* **Ours (DarkMamba):** 將 Encoder 與 Decoder 的核心特徵提取層替換為 **Vision Mamba Block (Vim)**。
+
+### 2. 為什麼引入 Mamba? (Selective State Space Model)
+
+為了克服 CNN 只能關注局部特徵的缺點，我們引入了 **Selective State Space Model (SSM)** 機制。如下圖所示：
+
+![Mamba Structure](assets/selection.png)
+*(Figure: Illustration of the Selective State Space Model with Hardware-aware State Expansion)*
+
+**核心技術點：**
+1.  **全域感受野 (Global Receptive Field):** 不同於 CNN 的滑動視窗，Mamba 將影像視為序列 (Sequence)，透過遞迴公式 $h_t = A h_{t-1} + B x_t$ 傳遞訊息，使模型能捕捉整張影像的長距離依賴 (Long-range Dependency)，這對於修復低光照影像中的整體色彩偏差至關重要。
+    
+2.  **選擇性機制 (Selection Mechanism):**
+    如圖中所示，參數 $B_t, C_t, \Delta_t$ 是根據輸入 $x_t$ 動態生成的。這意味著模型可以根據當前像素的特徵，**選擇性地記憶或遺忘**上下文資訊。在低光照場景中，這有助於模型區分「雜訊」與「紋理」，只保留有用的特徵。
+
+3.  **線性計算複雜度 (Linear Complexity):**
+    Mamba 雖然擁有類似 Transformer 的全域建模能力，但其計算複雜度僅為 $O(N)$ (線性)，遠低於 Transformer 的 $O(N^2)$。配合圖中所示的 **Hardware-aware (SRAM/HBM)** 優化設計，使 DarkMamba 能在保持高效推論的同時，顯著提升修復品質。
+
+---
+
+---
 
 ---
 
