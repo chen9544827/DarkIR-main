@@ -35,7 +35,7 @@
 
 我們提供了腳本可直接生成 "Input | DarkIR | DarkMamba" 的對比圖。
 
-*(在此處插入你用 inference_compare.py 跑出來的比較圖,例如 assets/comparison_result.png)*
+![DarkIR vs DarkMamba Comparison](assets/compare.jpg)
 
 ---
 
