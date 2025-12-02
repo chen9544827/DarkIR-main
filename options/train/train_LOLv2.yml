@@ -1,0 +1,98 @@
+# options/train/train_LOLv2.yml
+
+#### 1. 基本設定
+name: DarkIR_LOLv2_Training
+model_type: ImageRestoration
+scale: 1
+num_gpu: 1  # 單卡訓練
+manual_seed: 42
+
+#### 2. 數據集設定 (針對 LOLv2-real)
+datasets:
+  train:
+    name: LOLv2_Real_Train
+    mode: PairedImageDataset
+    # 修改成你實際的數據路徑
+    dataroot_gt: ./data/datasets/LOL-v2/LOL-v2/Real_captured/Train/Normal
+    dataroot_lq: ./data/datasets/LOL-v2/LOL-v2/Real_captured/Train/Low
+    
+    # 訓練參數
+    n_workers: 4
+    batch_size: 2      # 12GB 顯存建議設 2 或 1
+    gt_size: 256       # 裁切大小 (128 或 256)
+    use_flip: true
+    use_rot: true
+
+  val:
+    name: LOLv2_Real_Val
+    # 修改成你實際的數據路徑
+    dataroot_gt: ./data/datasets/LOL-v2/LOL-v2/Real_captured/Test/Normal
+    dataroot_lq: ./data/datasets/LOL-v2/LOL-v2/Real_captured/Test/Low
+    batch_size: 1
+
+#### 3. 網路架構設定 (跟 inference 一樣)
+network:
+  name: DarkIR
+  img_channels: 3
+  width: 32 # 使用 32 以節省顯存 (DarkIR-m)，如果要用大模型改成 64
+  middle_blk_num_enc: 2
+  middle_blk_num_dec: 2
+  enc_blk_nums: [1, 2, 3]
+  dec_blk_nums: [3, 1, 1]
+  dilations: [1, 4, 9]
+  extra_depth_wise: True
+
+#### 4. 訓練路徑設定
+path:
+  pretrain_network_g: ~
+  strict_load_g: true
+  resume_state: ~
+  # 訓練日誌和模型保存路徑
+  root: ./experiments
+  experiments_root: ../experiments/DarkIR_LOLv2
+  models: ../models/DarkIR_LOLv2
+  log: ../experiments/DarkIR_LOLv2/log
+
+#### 5. 優化器與排程器設定
+train:
+  # 優化器 (AdamW)
+  lr_initial: !!float 2e-4
+  weight_decay: !!float 1e-4
+  betas: [0.9, 0.999]
+  
+  # 學習率排程 (Cosine Annealing)
+  lr_scheme: CosineAnnealing
+  epochs: 1000       # 總 Epoch 數
+  eta_min: !!float 1e-6
+  
+  # 損失函數設定 (Losses)
+  pixel_criterion: l1
+  perceptual: True
+  perceptual_weight: 0.01
+  perceptual_criterion: l1
+  perceptual_reduction: mean
+  
+  edge: True
+  edge_weight: 0.05
+  edge_criterion: l1
+  edge_reduction: mean
+  
+  frequency: True
+  frequency_weight: 0.01
+  frequency_criterion: l1
+  frequency_reduction: mean
+  
+  enhance: True  # 這是 DarkIR 的特殊 Loss
+  enhance_weight: 0.1
+  enhance_criterion: l1
+  enhance_reduction: mean
+
+  # 驗證頻率
+  val_freq: 200 # 多少個 batch 驗證一次
+  save_freq: 100 # 多少個 epoch 存一次檔
+
+#### 6. WandB 設定 (可選)
+wandb:
+  init: False
+  project: DarkIR
+  name: LOLv2_Run

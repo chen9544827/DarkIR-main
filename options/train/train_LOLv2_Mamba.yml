@@ -1,0 +1,74 @@
+name: DarkMamba_LOLv2
+model_type: ImageRestoration
+scale: 1
+num_gpu: 1
+manual_seed: 42
+
+datasets:
+  train:
+    name: LOLv2_Real_Train
+    mode: PairedImageDataset
+    # 請務必確認這些路徑在 WSL 中是存在的！
+    dataroot_gt: /mnt/d/VScode/DarkIR-main/DarkIR-main/data/datasets/LOL-v2/LOL-v2/Real_captured/Train/Normal
+    dataroot_lq: /mnt/d/VScode/DarkIR-main/DarkIR-main/data/datasets/LOL-v2/LOL-v2/Real_captured/Train/Low
+    n_workers: 2       # 降低 worker 數量以求穩定
+    batch_size: 2
+    gt_size: 256       # 盡量維持 256
+    use_flip: true
+    use_rot: true
+
+  val:
+    name: LOLv2_Real_Val
+    dataroot_gt: /mnt/d/VScode/DarkIR-main/DarkIR-main/data/datasets/LOL-v2/LOL-v2/Real_captured/Test/Normal
+    dataroot_lq: /mnt/d/VScode/DarkIR-main/DarkIR-main/data/datasets/LOL-v2/LOL-v2/Real_captured/Test/Low
+    batch_size: 1
+
+network:
+  name: DarkMamba
+  img_channels: 3
+  width: 32
+  middle_blk_num_enc: 2
+  middle_blk_num_dec: 2
+  enc_blk_nums: [1, 2, 3]
+  dec_blk_nums: [3, 1, 1]
+  dilations: [1, 4, 9]
+  extra_depth_wise: True
+
+path:
+  pretrain_network_g: ~
+  strict_load_g: true
+  resume_state: ~
+  root: ./experiments
+  experiments_root: ./experiments/DarkMamba_LOLv2
+  models: ./experiments/DarkMamba_LOLv2/models
+  log: ./experiments/DarkMamba_LOLv2/log
+
+train:
+  lr_initial: !!float 2e-4
+  weight_decay: !!float 1e-4
+  betas: [0.9, 0.999]
+  lr_scheme: CosineAnnealing
+  epochs: 500
+  eta_min: !!float 1e-6
+  pixel_criterion: l1
+  perceptual: True
+  perceptual_weight: 0.01
+  perceptual_criterion: l1
+  perceptual_reduction: mean
+  edge: True
+  edge_weight: 0.05
+  edge_criterion: l1
+  edge_reduction: mean
+  frequency: True
+  frequency_weight: 0.01
+  frequency_criterion: l1
+  frequency_reduction: mean
+  enhance: True
+  enhance_weight: 0.1
+  enhance_criterion: l1
+  enhance_reduction: mean
+  val_freq: 5
+  save_freq: 50
+
+wandb:
+  init: False
